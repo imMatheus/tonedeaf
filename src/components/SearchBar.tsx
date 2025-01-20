@@ -1,13 +1,9 @@
 'use client'
 
-import {
-  Calculator,
-  Calendar,
-  CreditCard,
-  Settings,
-  Smile,
-  User,
-} from 'lucide-react'
+import { useRouter } from 'next/navigation'
+
+import { Search } from 'lucide-react'
+import { spotifyApi } from '@/lib/spotify-sdk'
 
 import {
   CommandDialog,
@@ -19,23 +15,90 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command'
-import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { DialogTitle } from './ui/dialog'
 
-export const SearchBar = () => {
-  const [open, setOpen] = useState(false)
+import { searchSpotify } from './actions'
+import { useCallback, useEffect, useState } from 'react'
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'j' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setOpen((open) => !open)
-      }
+interface SearchResult {
+  id: string
+  name: string
+  type: 'artist' | 'album' | 'track' | 'playlist'
+  imageUrl?: string
+  artist?: string
+}
+
+export function SearchBar() {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState('')
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const search = useCallback(async (term: string) => {
+    console.log()
+
+    if (!term) {
+      setResults([])
+      return
     }
 
-    document.addEventListener('keydown', down)
-    return () => document.removeEventListener('keydown', down)
+    setLoading(true)
+    try {
+      const { artists, albums, tracks } = await searchSpotify(term)
+
+      console.log({ artists, albums, tracks })
+
+      const formattedResults: SearchResult[] = [
+        ...(artists?.items.map((artist) => ({
+          id: artist.id,
+          name: artist.name,
+          type: 'artist' as const,
+          imageUrl: artist.images[0]?.url,
+        })) ?? []),
+        ...(albums?.items.map((album) => ({
+          id: album.id,
+          name: album.name,
+          type: 'album' as const,
+          imageUrl: album.images[0]?.url,
+          artist: album.artists[0]?.name,
+        })) ?? []),
+        ...(tracks?.items.map((track) => ({
+          id: track.id,
+          name: track.name,
+          type: 'track' as const,
+          imageUrl: track.album.images[0]?.url,
+          artist: track.artists[0]?.name,
+        })) ?? []),
+      ]
+
+      setResults(formattedResults)
+    } catch (error) {
+      console.error('Search error:', error)
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  console.log({ results })
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      search(value)
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [value, search])
+
+  const handleSelect = useCallback(
+    (result: SearchResult) => {
+      setOpen(false)
+      router.push(`/${result.type}/${result.id}`)
+    },
+    [router]
+  )
 
   return (
     <>
@@ -47,46 +110,42 @@ export const SearchBar = () => {
         <kbd className="inline-flex h-5 select-none items-center gap-1 font-mono text-sm opacity-100">
           <span className="text-sm">⌘</span>J
         </kbd>
-        {/* <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-          <span className="text-xs">⌘</span>J
-        </kbd> */}
       </div>
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog skipFilter open={open} onOpenChange={setOpen}>
         <DialogTitle className="sr-only">Search</DialogTitle>
-        <CommandInput placeholder="Type a command or search..." />
+        <CommandInput
+          placeholder="Type a command or search..."
+          value={value}
+          onValueChange={setValue}
+        />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Suggestions">
-            <CommandItem>
-              <Calendar />
-              <span>Calendar</span>
-            </CommandItem>
-            <CommandItem>
-              <Smile />
-              <span>Search Emoji</span>
-            </CommandItem>
-            <CommandItem>
-              <Calculator />
-              <span>Calculator</span>
-            </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Settings">
-            <CommandItem>
-              <User />
-              <span>Profile</span>
-              <CommandShortcut>⌘P</CommandShortcut>
-            </CommandItem>
-            <CommandItem>
-              <CreditCard />
-              <span>Billing</span>
-              <CommandShortcut>⌘B</CommandShortcut>
-            </CommandItem>
-            <CommandItem>
-              <Settings />
-              <span>Settings</span>
-              <CommandShortcut>⌘S</CommandShortcut>
-            </CommandItem>
+            {results.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={result.name}
+                onSelect={() => handleSelect(result)}
+              >
+                {result.imageUrl && (
+                  <img
+                    src={result.imageUrl}
+                    alt={result.name}
+                    className="h-10 w-10 rounded object-cover"
+                  />
+                )}
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{result.name}</span>
+                  {result.artist && (
+                    <span className="text-xs text-muted-foreground">
+                      {result.artist}
+                    </span>
+                  )}
+                  <span className="text-xs capitalize text-muted-foreground">
+                    {result.type}
+                  </span>
+                </div>
+              </CommandItem>
+            ))}
           </CommandGroup>
         </CommandList>
       </CommandDialog>

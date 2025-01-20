@@ -1,6 +1,6 @@
 import { db, artists } from '@/lib/drizzle'
 
-export default async function Artists() {
+export default async function AlbumPage() {
   const allArtists = await db.select().from(artists)
 
   return (
