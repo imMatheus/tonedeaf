@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { LogOut } from 'lucide-react'
 import { Button } from './ui/button'
+import { SearchBar } from './SearchBar'
 
 export const Navbar: React.FC = ({}) => {
   const { user } = useUser()
@@ -54,6 +55,10 @@ export const Navbar: React.FC = ({}) => {
             <Link href={ROUTE_PAGES.HOME}>Home</Link>
             <Link href={ROUTE_PAGES.ARTISTS}>Artists</Link>
           </div>
+        </div>
+
+        <div>
+          <SearchBar />
         </div>
         <div className="flex items-center">
           {user ? (
