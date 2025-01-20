@@ -46,10 +46,10 @@ export const Navbar: React.FC = ({}) => {
   }
 
   return (
-    <div className="px-4 py-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center">
+    <div className="mx-auto max-w-7xl px-4 py-6">
+      <div className="flex items-center justify-between">
         <div className="flex items-center justify-center">
-          <h2 className="text-2xl font-bold mr-2 italic">Tonedeaf</h2>
+          <h2 className="mr-2 text-2xl font-bold italic">Tonedeaf</h2>
           <div className="flex items-center gap-2">
             <Link href={ROUTE_PAGES.HOME}>Home</Link>
             <Link href={ROUTE_PAGES.ARTISTS}>Artists</Link>
@@ -67,14 +67,14 @@ export const Navbar: React.FC = ({}) => {
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="w-4 h-4" /> Logout
+                  <LogOut className="h-4 w-4" /> Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <button
               onClick={handleSpotifyLogin}
-              className="bg-[#1DB954] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#1ed760] transition-colors"
+              className="rounded-full bg-[#1DB954] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#1ed760]"
             >
               Login with Spotify
             </button>
